@@ -1,0 +1,12 @@
+﻿<Window x:Class="Simulador_Final.ReplicacoesAExibir"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Replicações A Exibir" Height="300" Width="300">
+
+    <ScrollViewer HorizontalAlignment="Stretch" Name="areaScroll" VerticalAlignment="Stretch">
+        <Grid Name="baseGrid">
+            <Label Content="Replicações a Exibir" Height="30" HorizontalAlignment="Center" Margin="59,10,50,0" Name="label1" VerticalAlignment="Top" Width="160" FontSize="16" FontWeight="Bold" />
+        </Grid>
+    </ScrollViewer>
+
+</Window>

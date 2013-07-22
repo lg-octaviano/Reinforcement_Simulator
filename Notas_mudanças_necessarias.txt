@@ -1,0 +1,11 @@
+MUDANÇAS NECESSÁRIAS:
+
+-Fazer o processamento em thread separada, comunicando as atualizacoes de interface para a main thread. Isso pode ser feito via dispatcher! :
+http://msdn.microsoft.com/en-us/magazine/cc163328.aspx
+http://tech.pro/tutorial/800/working-with-the-wpf-dispatcher
+
+-Classes tarefa e maquina precisam ter uma classe filha para ser usada com o aprendiz, com os métodos a mais e, na tarefa, carregando as infos de s, a, s', a'.
+
+-Arrumar a bagunça da arquitetura de ter que ficar chamando main.atributo... Provavelmente isso vai ser resolvido com a primeira mudança sugerida
+
+-Desenhar diagramas de classe.

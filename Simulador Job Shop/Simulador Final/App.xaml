@@ -1,0 +1,113 @@
+﻿<Application x:Class="Simulador.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             StartupUri="MainWindow.xaml">
+    
+    <Application.Resources>
+
+        <!--    ESTILO DA LABEL DE REPLICAÇÃO    -->
+        <Style TargetType="Label" x:Key="estiloEtiquetaRep">
+            <Setter Property="Foreground" Value="#FF5B94AA" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Grid.Row" Value="1" />
+            <Setter Property="ToolTip" Value="Número da replicação que está sendo executada." />
+        </Style>
+        
+        <!--   ESTILO DA LABEL DE TEMPO      -->
+        <Style TargetType="Label" x:Key="estiloEtiquetaTempo">
+            <Setter Property="Height" Value="27" />
+            <Setter Property="Margin" Value="21, 10, 0, 0"/>
+            <Setter Property="Background" Value="#FF293955" />
+            <Setter Property="Foreground" Value="#FF5B94AA" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+            <Setter Property="VerticalAlignment" Value="Top" />
+            <Setter Property="Grid.Row" Value="0" />
+            <Setter Property="ToolTip" Value="Tempo atual da simulação." />
+        </Style>
+        
+        
+        <!--    ESTILO DO BOTÃO DA TAREFA   -->
+        <Style TargetType="Button" x:Key="estiloTarefa">
+            <Setter Property="Background" Value="#FF313592"/>
+            <Setter Property="Foreground" Value="Black"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="Normal" />
+            <Setter Property="Width" Value="60"/>
+            <Setter Property="Height" Value="25"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="VerticalAlignment" Value="Top" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+        </Style>
+
+
+        <!--     ESTILO DA CAIXA DA MAQUINA      -->
+        <Style TargetType="GroupBox" x:Key="estiloCaixaMaquina">
+            <Setter Property="BorderBrush" Value="#FF2455A3" />
+            <Setter Property="BorderThickness" Value="2" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Width" Value="Auto" />
+            <Setter Property="Height" Value="85" />
+            <Setter Property="Margin" Value="20" />
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="VerticalAlignment" Value="Stretch" />
+        </Style>
+
+
+        <!--      ESTILO DA WRAPPANEL DA MAQUINA   -->
+        <Style TargetType="WrapPanel" x:Key="estiloFluxoMaquina">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Width" Value="Auto" />
+            <Setter Property="Height" Value="Auto" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="VerticalAlignment" Value="Stretch" />
+            <Setter Property="FlowDirection" Value="LeftToRight" />
+            <Setter Property="ToolTip" Value="Fila de espera da máquina. As tarefas que chegaram primeiro ficam mais à esquerda." />
+        </Style>
+
+
+        <!--     ESTILO DO SCROLLBAR DA MAQUINA     -->
+        <Style TargetType="ScrollViewer" x:Key="estiloScrollMaquina">
+            <Setter Property="HorizontalScrollBarVisibility" Value="Auto" />
+            <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="VerticalAlignment" Value="Stretch" />
+        </Style>
+
+        <!--     ESTILO DA STACKPANEL DOS DETALHES DA MAQUINA/TAREFA    -->
+        <Style TargetType="StackPanel" x:Key="estiloStackPanel">
+            <Setter Property="Background" Value="#FF5B94AA" />
+            <Setter Property="Grid.Column" Value="2" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="Width" Value="Auto" />
+            <Setter Property="ToolTip" Value="Painel em que são mostrados os detalhes da máquina ou tarefa." />
+        </Style>
+
+        <!--        ESTILO DA ETIQUETA TITULO DOS DETALHES       -->
+        <Style TargetType="Label" x:Key="estiloTituloDetalhes" >
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Foreground" Value="#FF25344E" />
+        </Style>
+
+        <!--        ESTILO DA ETIQUETA DOS DETALHES       -->
+        <Style TargetType="Label" x:Key="estiloDetalhes" >
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Foreground" Value="#FF25344E" />
+        </Style>
+
+        <!--        ESTILO DA ETIQUETA TITULO DO STACKPANEL DETALHES       -->
+        <Style TargetType="Label" x:Key="estiloTituloStackPanel" >
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Background" Value="#FF25344E" />
+            <Setter Property="Foreground" Value="#FF5B94AA" />
+            <Setter Property="Content" Value="Painel de Detalhes" />
+        </Style>
+    </Application.Resources>
+</Application>

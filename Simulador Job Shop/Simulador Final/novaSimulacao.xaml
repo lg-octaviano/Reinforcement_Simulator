@@ -1,0 +1,51 @@
+﻿<Window x:Class="Simulador_Final.novaSimulacao"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Nova Simulação" Height="712" Width="431" ResizeMode="NoResize" Icon="Imagens/Icones/iniciarSim.png">
+    <Grid Background="{x:Null}">
+        <Label Content="Começar uma nova simulação" Height="39" HorizontalAlignment="Left" Margin="77,13,0,0" Name="label3" VerticalAlignment="Top" Width="239" FontSize="16" FontWeight="Bold" />
+        <!--  BOTÕES -->
+        <Button Content="Ok" Height="23" HorizontalAlignment="Left" Margin="241,638,0,0" Name="button1" VerticalAlignment="Top" Width="75" Click="Ok_Click"/>
+        <Button Content="Cancelar" Height="23" HorizontalAlignment="Left" Margin="322,638,0,0" Name="button2" VerticalAlignment="Top" Width="75" Click="Cancel_Click"/>
+        
+        <!-- CAIXAS DE TEXTO  -->
+        <Label Content="Número de máquinas:" Height="28" Margin="22,68,0,0" Name="label1" VerticalAlignment="Top" HorizontalAlignment="Left" Width="130" />
+        <TextBox Height="23" HorizontalAlignment="Left" Margin="158,68,0,0" Name="textBox1" VerticalAlignment="Top" Width="43" MaxLength="2" Text="5" />
+        
+        <Label Content="Número de tarefas:" Height="28" HorizontalAlignment="Left" Margin="22,102,0,0" Name="label2" VerticalAlignment="Top" Width="130" />
+        <TextBox Height="23" HorizontalAlignment="Left" Margin="158,102,0,0" Name="textBox2" VerticalAlignment="Top" Width="43" MaxLength="3" Text="20" />
+        
+        <Label Content="Número de replicações:" Height="34" HorizontalAlignment="Left" Margin="22,136,0,0" Name="label4" VerticalAlignment="Top" Width="143" />
+        <TextBox Height="24" HorizontalAlignment="Left" Margin="158,138,0,0" Name="textBox3" VerticalAlignment="Top" Width="43" MaxLength="5" Text="1" />
+
+        <Label Content="Número de replicações a exibir:" Height="29" HorizontalAlignment="Left" Margin="22,176,0,0" Name="label6" VerticalAlignment="Top" Width="179" />
+        <TextBox Height="29" HorizontalAlignment="Left" Margin="210,176,0,0" Name="textBox4" VerticalAlignment="Top" Width="41" Text="1" />
+
+        <!-- BOTÕES REGRAS DE DESPACHO  -->
+        <Label Content="Regra de Despacho:" Height="25" HorizontalAlignment="Left" Margin="22,226,0,0" Name="label5" VerticalAlignment="Top" Width="130" />
+        <RadioButton Content="Shortest Processing Time" HorizontalAlignment="Left" Margin="22,257,0,288" Name="SPT" Width="168" />
+        <RadioButton Content="Work in Next Queue" Height="24" HorizontalAlignment="Left" Margin="22,279,0,0" Name="WINQ" VerticalAlignment="Top" Width="143" />
+        <RadioButton Content="Maior Trabalho em Filas Anteriores" Height="21" HorizontalAlignment="Left" Margin="22,301,0,0" Name="TFA" VerticalAlignment="Top" Width="210" />
+        <RadioButton Content="Maior Folga Baseada Em Tempo De Vida nas Máquinas" Height="21" HorizontalAlignment="Left" Margin="22,323,0,0" Name="maiorFTVM" VerticalAlignment="Top" Width="323" />
+        <RadioButton Content="EDD + LWR" Height="21" HorizontalAlignment="Left" Margin="22,345,0,0" Name="EDD_LWR" VerticalAlignment="Top" Width="113" />
+        <RadioButton Content="Tarefa com menor velocidade" Height="21" HorizontalAlignment="Left" Margin="22,367,0,0" Name="menorVelocidade" VerticalAlignment="Top" Width="179" />
+        <RadioButton Content="Tarefa com maior velocidade" Height="21" HorizontalAlignment="Left" Margin="22,389,0,0" Name="maiorVelocidade" VerticalAlignment="Top" Width="179" />
+        <RadioButton Content="Least Work Remaining" Height="26" HorizontalAlignment="Left" Margin="22,411,0,0" Name="LWR" VerticalAlignment="Top" Width="143" />
+        <RadioButton Content="Menor Folga Baseada Em Velocidade da Tarefa" Height="21" HorizontalAlignment="Left" Margin="22,433,0,0" Name="menorFVT" VerticalAlignment="Top" Width="270" />
+        <RadioButton Content="Maior Folga Baseada Em Velocidade da Tarefa" Height="21" HorizontalAlignment="Left" Margin="22,455,0,0" Name="maiorFVT" VerticalAlignment="Top" Width="270" />
+        <RadioButton Content="Earliest Due Date" Height="23" HorizontalAlignment="Left" Margin="22,477,0,0" Name="EDD" VerticalAlignment="Top" Width="143" />
+        <RadioButton Content="Menor Folga Baseada Em Tempo De Vida nas Máquinas" Height="21" HorizontalAlignment="Left" Margin="22,499,0,0" Name="menorFTVM" VerticalAlignment="Top" Width="323" />
+        <RadioButton Content="Maior Tempo De Vida nas Máquinas Seguintes" Height="21" HorizontalAlignment="Left" Margin="22,522,0,0" Name="maiorTVMS" VerticalAlignment="Top" Width="323" />
+        
+        <RadioButton Content="Regra Aleatória" Height="21" HorizontalAlignment="Left" Margin="22,544,0,0" Name="regraAleatoria" VerticalAlignment="Top" Width="113" IsChecked="True" />
+        <RadioButton Content="Tarefa Aleatória" Height="21" HorizontalAlignment="Left" Margin="22,566,0,0" Name="tarefaAleatoria" VerticalAlignment="Top" Width="113" />
+        <RadioButton Content="Aprendizado por Reforço" Height="21" HorizontalAlignment="Left" Margin="22,588,0,0" Name="aprendizadoReforco" VerticalAlignment="Top" Width="159" />
+
+
+
+
+
+
+
+    </Grid>
+</Window>
