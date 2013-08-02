@@ -5,12 +5,15 @@ using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using MathNet.Numerics.Distributions;
+using System.Windows.Threading;
 
-namespace Simulador_Final
+namespace Reinforcement_Simulator
 {
     class Tarefa
     {
         public delegate void PainelEventHandler(object sender, PainelArgs e);
+
+        private Simulador simulador;
         //Identificador da Tarefa: 0-199
         private int id;
         //Ordem das máquinas: 0-4, sem repetição
@@ -50,15 +53,13 @@ namespace Simulador_Final
         //Ação a tomar no estado após a seleção da tarefa
         private int[] proximaAcao;
 
-        Aprendiz aprendiz;
-
-        public Tarefa(int id, int qtdMaquinas, double instanteChegada, Aprendiz aprendiz)
+        public Tarefa(int id, int qtdMaquinas, double instanteChegada, Simulador sim)
         {
             this.id = id;
             int x, temp;
             operacoesCompletas = 0;
             this.qtdMaquinas = qtdMaquinas;
-            this.aprendiz = aprendiz;
+            this.simulador = sim;
 
             Random rnd = new Random(DateTime.Now.Millisecond + id*3);//Sem id, as seeds ficam iguais
                                                                      //e os numeros tbm
@@ -167,10 +168,10 @@ namespace Simulador_Final
             Detalhes[2*qtdMaquinas + 3].Content = "Número de operações finalizadas: " + this.operacoesCompletas;
         }
 
-        public void setProximoEstado()
+        public void setProximoEstadoAcao()
         {
-            var main = App.Current.MainWindow as MainWindow;
-            int[] estadoSistema = main.getEstadoSistema(this.getMaquina(getOperacoesCompletas()));
+            //var main = App.Current.MainWindow as MainWindow;
+            int[] estadoSistema = simulador.getEstadoSistema(this.getMaquina(getOperacoesCompletas()));
 
             for (int i = 0; i < qtdMaquinas; i++)
             {
@@ -185,21 +186,19 @@ namespace Simulador_Final
              * +estadoSistema[0] +estadoSistema[1]);
             */
 
-            //Isso deve ser mudado!
-            if (qtdMaquinas == 5)
+            if (simulador.isModoAprendizado() && qtdMaquinas == 5)
             {
                 int estado = proximoEstado[operacoesCompletas][0] + 3 * proximoEstado[operacoesCompletas][1] +
                     9 * proximoEstado[operacoesCompletas][2] + 27 * proximoEstado[operacoesCompletas][3] +
                     81 * proximoEstado[operacoesCompletas][4];
 
-                proximaAcao[operacoesCompletas] = aprendiz.selecionarAcao(estado);
+                proximaAcao[operacoesCompletas] = simulador.selecionarAcao(estado);
             }
         }
 
         public void setEstados(int acao)
         {
-            var main =App.Current.MainWindow as MainWindow;
-            int[] estadoSistema = main.getEstadoSistema(getMaquina(getOperacoesCompletas()));
+            int[] estadoSistema = simulador.getEstadoSistema(getMaquina(getOperacoesCompletas()));
 
             for (int i = 0; i < qtdMaquinas; i++)
             {
@@ -263,28 +262,31 @@ namespace Simulador_Final
             operacoesCompletas++;
             if(operacoesCompletas < qtdMaquinas)
                 tempoChegadaNaMaquina[operacoesCompletas] = tempo;  /*O tempo de chegada na próxima máquina é o tempo de conclusão na máquina anterior*/
-            Detalhes[2*qtdMaquinas + 3].Content = "Número de operações finalizadas: " + this.operacoesCompletas;
+
+            Detalhes[2 * qtdMaquinas + 3].Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
+            { Detalhes[2 * qtdMaquinas + 3].Content = "Número de operações finalizadas: " + this.operacoesCompletas; }));
 
             //DEPOIS QUE TIVER MAIS DETALHES TEM Q ATUALIZAR
             //this.setDetalhes();
         }
 
         //Chamar quando a tarefa tiver completado todas as operações
-        public void finalizada(double tempo, Tarefa temp)
+        public void finalizada(double tempo)
         {
-            temp.getBotaoTarefa().Margin = new Thickness(0);
-            temp.getBotaoTarefa().VerticalAlignment = VerticalAlignment.Stretch;
-            temp.getBotaoTarefa().Margin = new Thickness(2, 0, 2, 0);
-
-            
             this.atraso = tempo - this.dataEntrega;
             if (atraso < 0) /*O atraso é zero caso a tarefa chegue antes da Due Date*/
                 atraso = 0;
 
-            Detalhes[2*qtdMaquinas + 4].Content = "Atraso da Tarefa: " + this.atraso;
+            botaoTarefa.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => {
+                botaoTarefa.Margin = new Thickness(0);
+                botaoTarefa.VerticalAlignment = VerticalAlignment.Stretch;
+                botaoTarefa.Margin = new Thickness(2, 0, 2, 0);
+                Detalhes[2 * qtdMaquinas + 4].Content = "Atraso da Tarefa: " + this.atraso;
+            }));
+
 
             /*Atualizações da tabela do aprendiz*/
-            if (aprendiz != null && qtdMaquinas==5)
+            if (simulador.isModoAprendizado() && qtdMaquinas==5)
             {
                 int s, new_s;
                 for(int i=0; i<qtdMaquinas; i++)
@@ -296,7 +298,7 @@ namespace Simulador_Final
                         9*proximoEstado[i][2] + 27*proximoEstado[i][3] + 
                         81*proximoEstado[i][4];
 
-                    aprendiz.atualizarQ(s, acao[i], -this.atraso, new_s, proximaAcao[i]);
+                    simulador.atualizarQ(s, acao[i], -this.atraso, new_s, proximaAcao[i]);
                 }
                     
             }

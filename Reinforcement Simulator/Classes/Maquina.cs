@@ -5,8 +5,9 @@ using System.Linq;
 using System.Text;
 using System.Collections;   //ArrayList
 using System.Windows.Controls;  //botoes e etc
-using System.Windows.Input; //mouseEvent no eventHandler
-namespace Simulador_Final
+using System.Windows.Input;
+using System.Windows.Threading; //mouseEvent no eventHandler
+namespace Reinforcement_Simulator
 {
 
     class Maquina
@@ -14,6 +15,8 @@ namespace Simulador_Final
         private int id;
         private bool estaProcessando;
         private Tarefa emProcessamento;
+
+        private Simulador simulador;
 
         private double mediaTempoDeVidaDasTarefas;  /*Tempo médio que cada tarefa ficou na máquina, incluindo processamento e fila*/
         private int tarefasConcluidas;
@@ -41,9 +44,7 @@ namespace Simulador_Final
         //Fila de tarefas na maquina
         private ArrayList fila = new ArrayList();
 
-        Aprendiz aprendiz;
-
-        public Maquina(int id, Aprendiz aprendiz)
+        public Maquina(int id, Aprendiz aprendiz, Simulador sim)
         {
             //Os IDs das maquinas variam de 0 a 4;
             this.id = id;
@@ -51,8 +52,7 @@ namespace Simulador_Final
             tarefasConcluidas = 0;
             mediaTempoDeVidaDasTarefas = 0;
 
-            this.aprendiz = aprendiz;
-
+            this.simulador = sim;
             //Dados adicionados ao array a cada decisão
             //Trata-se de um crosscutting concern. Possibilidade de utilização de aspectos para controlar a saída em relatórios
             menorSPT = new ArrayList();
@@ -91,7 +91,7 @@ namespace Simulador_Final
                     Detalhes[i].Style = (Style)App.Current.Resources["estiloDetalhe"];
             }
             Detalhes[0].Content = "Maquina " + id + ":";
-            setDetalhes();
+            Detalhes[0].Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(setDetalhes));
             Detalhes[0].Style = (Style)App.Current.Resources["estiloTituloDetalhes"];
 
             //Atribuição de parâmetros do PAINEL DE FLUXO
@@ -171,8 +171,12 @@ namespace Simulador_Final
             fila.Add(t);
 
             //Adicionando botão da tarefa na máquina
-            t.getBotaoTarefa().Margin = new Thickness(2, 12, 2, 0);
-            fluxoMaquina.Children.Add(t.getBotaoTarefa());
+            t.getBotaoTarefa().Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
+            {
+                t.getBotaoTarefa().Margin = new Thickness(2, 12, 2, 0);
+                fluxoMaquina.Children.Add(t.getBotaoTarefa());
+            }));
+
         }
 
         //------------------------------------------------------
@@ -278,7 +282,6 @@ namespace Simulador_Final
             Tarefa T;
             double menorTrabProxFila = Double.MaxValue;
             double trabProxFila;
-            var main = App.Current.MainWindow as MainWindow;
 
             for (int i = 0; i < fila.Count; i++)
             {
@@ -291,7 +294,7 @@ namespace Simulador_Final
                 }
                 else
                 {
-                    trabProxFila = main.calcularTrabalhoMaquina(T.getMaquina(T.getOperacoesCompletas() + 1));
+                    trabProxFila = simulador.calcularTrabalhoMaquina(T.getMaquina(T.getOperacoesCompletas() + 1));
                 }
 
                 if(trabProxFila < menorTrabProxFila)
@@ -311,7 +314,6 @@ namespace Simulador_Final
             Tarefa T;
             double maiorTrabFilasAnteriores = -1;
             double trabFilasAnteriores;
-            var main = App.Current.MainWindow as MainWindow;
 
             for (int i = 0; i < fila.Count; i++)
             {
@@ -326,7 +328,7 @@ namespace Simulador_Final
                 {
                     trabFilasAnteriores = 0;
                     for(int m=0; m<T.getOperacoesCompletas(); m++)
-                        trabFilasAnteriores += main.calcularTrabalhoMaquina(T.getMaquina(m));
+                        trabFilasAnteriores += simulador.calcularTrabalhoMaquina(T.getMaquina(m));
                 }
 
                 if (trabFilasAnteriores > maiorTrabFilasAnteriores)
@@ -490,7 +492,6 @@ namespace Simulador_Final
             double menorTempo = Double.MaxValue;
             double somaTempoProximasMaquinas = 0;
             double tempoParaPrazo = 0;
-            var main = App.Current.MainWindow as MainWindow;
 
             for (int i = 0; i < fila.Count; i++)
             {
@@ -499,7 +500,7 @@ namespace Simulador_Final
                 //soma do tempo estimado que a tarefa ficará nas próximas máquinas, baseado no tempo de vida médio nas máquinas
                 for (int j = T.getOperacoesCompletas(); j < T.getQtdMaquina(); j++)
                 {
-                    somaTempoProximasMaquinas += main.tempoDeVidaMedioNaMaquina(T.getMaquina(j));
+                    somaTempoProximasMaquinas += simulador.tempoDeVidaMedioNaMaquina(T.getMaquina(j));
                 }
                 tempoParaPrazo = T.getDataEntrega() - tempoatual;
 
@@ -522,7 +523,6 @@ namespace Simulador_Final
             double maiorTempo = Double.MinValue;
             double somaTempoProximasMaquinas = 0;
             double tempoParaPrazo = 0;
-            var main = App.Current.MainWindow as MainWindow;
 
             for (int i = 0; i < fila.Count; i++)
             {
@@ -531,7 +531,7 @@ namespace Simulador_Final
                 //soma do tempo estimado que a tarefa ficará nas próximas máquinas, baseado no tempo de vida médio nas máquinas
                 for (int j = T.getOperacoesCompletas(); j < T.getQtdMaquina(); j++)
                 {
-                    somaTempoProximasMaquinas += main.tempoDeVidaMedioNaMaquina(T.getMaquina(j));
+                    somaTempoProximasMaquinas += simulador.tempoDeVidaMedioNaMaquina(T.getMaquina(j));
                 }
                 tempoParaPrazo = T.getDataEntrega() - tempoatual;
 
@@ -553,7 +553,6 @@ namespace Simulador_Final
             Tarefa T;
             double maiorTempo = Double.MinValue;
             double somaTempoProximasMaquinas = 0;
-            var main = App.Current.MainWindow as MainWindow;
 
             for (int i = 0; i < fila.Count; i++)
             {
@@ -562,7 +561,7 @@ namespace Simulador_Final
                 //soma do tempo estimado que a tarefa ficará nas próximas máquinas, baseado no tempo de vida médio nas máquinas
                 for (int j = T.getOperacoesCompletas(); j < T.getQtdMaquina(); j++)
                 {
-                    somaTempoProximasMaquinas += main.tempoDeVidaMedioNaMaquina(T.getMaquina(j));
+                    somaTempoProximasMaquinas += simulador.tempoDeVidaMedioNaMaquina(T.getMaquina(j));
                 }
                 if (somaTempoProximasMaquinas > maiorTempo)
                 {
@@ -711,8 +710,7 @@ namespace Simulador_Final
 
         public void aprendizadoReforco(double tempo)
         {
-            var main = App.Current.MainWindow as MainWindow;
-            int[] estado = main.getEstadoSistema(this.id);
+            int[] estado = simulador.getEstadoSistema(this.id);
             int acao;
             Random rand = new Random();
             if (fila.Count == 1)
@@ -723,7 +721,7 @@ namespace Simulador_Final
             {//SOH FUNCIONA PRA 5 MAQUINAS
                 int s = estado[0] + 3 * estado[1] +
                             9 * estado[2] + 27 * estado[3] + 81 * estado[4];
-                acao = aprendiz.selecionarAcao(s);
+                acao = simulador.selecionarAcao(s);
             }
             switch(acao){
                 case 0:SPT();
@@ -774,7 +772,7 @@ namespace Simulador_Final
         {
             //Ajusta vetores de saída e painel
             regra.Add(acao);
-            setDetalhes();
+            Detalhes[0].Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(setDetalhes));
             setSaidaArq();
 
             //Coloca informações de estado (s) na tarefa que será retirada
@@ -787,14 +785,17 @@ namespace Simulador_Final
             emProcessamento = (Tarefa)fila[indice];
             fila.RemoveAt(indice);
 
-            //Ajusta elementos gráficos
-            emProcessamento.getBotaoTarefa().Margin = new Thickness(5, 22, 5, 0);
-            fluxoMaquina.Children.Remove(emProcessamento.getBotaoTarefa());
-            Grid.SetColumn(emProcessamento.getBotaoTarefa(), 0);
-            gridMaquina.Children.Add(emProcessamento.getBotaoTarefa());
+            //Ajusta elementos gráficos p/ botão da tarefa ir da fila para processamento
+            gridMaquina.Dispatcher.Invoke(DispatcherPriority.Normal, new Action(() =>
+                {
+                    emProcessamento.getBotaoTarefa().Margin = new Thickness(5, 22, 5, 0);
+                    fluxoMaquina.Children.Remove(emProcessamento.getBotaoTarefa());
+                    Grid.SetColumn(emProcessamento.getBotaoTarefa(), 0);
+                    gridMaquina.Children.Add(emProcessamento.getBotaoTarefa());
+                }));
 
             //Coloca informações de estado (s') e acao na tarefa
-            emProcessamento.setProximoEstado();
+            emProcessamento.setProximoEstadoAcao();
         }
 
         public bool isFilaVazia()
@@ -807,11 +808,12 @@ namespace Simulador_Final
 
         public void operacaoFinalizada(double tempo)
         {
-            gridMaquina.Children.Remove(this.emProcessamento.getBotaoTarefa());
+            gridMaquina.Dispatcher.Invoke(DispatcherPriority.Normal, new Action(() => 
+            {gridMaquina.Children.Remove(this.emProcessamento.getBotaoTarefa()); }));
             emProcessamento.operacaoFinalizada(tempo);
             tarefasConcluidas++;
             mediaTempoDeVidaDasTarefas = (mediaTempoDeVidaDasTarefas * (tarefasConcluidas - 1) + tempo - emProcessamento.getTempoChegadaNaUltimaMaquina())/tarefasConcluidas;
-            setDetalhes();
+            Detalhes[0].Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(setDetalhes));
             emProcessamento = null;
             this.estaProcessando = false;
         }
@@ -908,7 +910,7 @@ namespace Simulador_Final
             return this.emProcessamento;
         }
 
-        public event Simulador_Final.Tarefa.PainelEventHandler Focada;
+        public event Reinforcement_Simulator.Tarefa.PainelEventHandler Focada;
 
 
     }

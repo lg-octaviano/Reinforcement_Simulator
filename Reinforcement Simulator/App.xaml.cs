@@ -5,7 +5,7 @@ using System.Data;
 using System.Linq;
 using System.Windows;
 
-namespace Simulador_Final
+namespace Reinforcement_Simulator
 {
     /// <summary>
     /// Interaction logic for App.xaml

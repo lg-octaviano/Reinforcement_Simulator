@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Windows.Controls;
 
-namespace Simulador_Final
+namespace Reinforcement_Simulator
 {
 
     public class PainelArgs : EventArgs

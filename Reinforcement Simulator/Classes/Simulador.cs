@@ -11,7 +11,7 @@ using System.Collections;
 using System.Threading;
 
 
-namespace Simulador_Final
+namespace Reinforcement_Simulator
 {
     class Simulador
     {
@@ -20,27 +20,30 @@ namespace Simulador_Final
         System.Windows.DependencyProperty dp, Object value);
 
         //Objetos para controle do tempo
-        private DispatcherTimer timer;
+        public int tempoDeEspera;
+        public bool pausado;
         private double tempo = 0;
         private double dt = 0.01;
         private Label labelTempo;
 
         //Número de replicações totais e replicações já concluídas
-        private int replicacoesTotais;
+        public int replicacoesTotais;
         private int replicacaoAtual;
 
         //Replicações a serem mostradas
-        private bool mostrar;
+        public bool mostrar;
         int[] exibirRep;
 
         //Características escolhidas pelo usuário para a simulação
-        int acao;
+        public int acao;
         int qtdMaquinas;
         int qtdTarefas;
 
         //Objetos do sistema de manufatura
         Tarefa[] tarefa;
         Maquina[] maquina;
+
+        int tarefasConcluidas;
 
         Aprendiz aprendiz;
 
@@ -51,6 +54,10 @@ namespace Simulador_Final
         public Simulador(int qTarefas, int qMaquinas, int acao, int rep, int[] exibirRep)
         {
             var main = App.Current.MainWindow as MainWindow;
+
+            tempoDeEspera = (int)main.sliderTempo.Value;
+            pausado = false;
+
             //Setando a quantidade de máquinas e tarefas
             qtdMaquinas = qMaquinas;
             qtdTarefas = qTarefas;
@@ -88,15 +95,128 @@ namespace Simulador_Final
                 aprendiz = null;
         }
 
-
-
-        public void iniciarReplicacao()
+        public int selecionarAcao(int s)
         {
-            //var main = (MainWindow)param;
+            return this.aprendiz.selecionarAcao(s);
+        }
+
+        public bool isModoAprendizado()
+        {
+            return acao == 13;
+        }
+
+        public void atualizarQ(int s, int a, double r, int new_s, int new_a)
+        {
+            this.aprendiz.atualizarQ(s, a, r, new_s, new_a);
+        }
+
+        /* Como o Threading Model do WPF exige que os elementos gráficos sejam criados
+         * na mesma Thread STA que irá manipulá-las, criaremos os objetos Maquina e 
+         * Tarefa na Thread Principal. Para isso, utilizaremos instanciarMaquinas() e
+         * instanciarTarefas(), passando-as pelo Dispatcher para a Thread associada a main.
+         */
+        private void instanciarMaquinas()
+        {
+            var main = App.Current.MainWindow as MainWindow;
+            this.maquina = new Maquina[qtdMaquinas];
+            for (int i = 0; i < qtdMaquinas; i++)
+            {
+                this.maquina[i] = new Maquina(i, aprendiz, this);
+                this.maquina[i].Focada += new Reinforcement_Simulator.Tarefa.PainelEventHandler(main.colocarDetalhe);
+            }
+        }
+
+        private void instanciarTarefas()
+        {
             var main = App.Current.MainWindow as MainWindow;
 
-            //App.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
-           // {
+            tarefa = new Tarefa[qtdTarefas];
+            Exponential expDist = new Exponential(0.090);
+            double ultimaChegada = 0;
+
+            for (int i = 0; i < qtdTarefas; i++)
+            {
+                ultimaChegada += expDist.Sample();
+                ultimaChegada = Math.Round(ultimaChegada, 2);
+                tarefa[i] = new Tarefa(i, qtdMaquinas, ultimaChegada, this);
+                tarefa[i].Focada += new Reinforcement_Simulator.Tarefa.PainelEventHandler(main.colocarDetalhe);
+            }
+        }
+
+        private bool terminouReplicacao()
+        {
+            var main = App.Current.MainWindow as MainWindow;
+            int tarefasConcluidas = 0;
+
+
+            main.Dispatcher.Invoke(DispatcherPriority.Normal, new Action(() =>
+                {
+                    //Subtrai-se 1 porque existe um label em saida.Children
+                    tarefasConcluidas = main.saida.Children.Count - 1;
+                }));
+
+            MessageBox.Show("tarefas concluidas = "+tarefasConcluidas);
+            return tarefasConcluidas >= qtdTarefas;
+        }
+
+        public double tempoDeVidaMedioNaMaquina(int m)
+        {
+            return maquina[m].getTempoMedioDeVida();
+        }
+
+        public double calcularTrabalhoMaquina(int m)
+        {
+            double trabalho = 0;
+            for (int i = 0; i < maquina[m].getFila().Count; i++)
+            {
+                Tarefa T = (Tarefa)maquina[m].getFila()[i];
+                trabalho += T.getTempoDeProcessamento(T.getOperacoesCompletas());
+            }
+            return trabalho;
+        }
+
+        public int[] getEstadoSistema(int m)
+        {
+            int[] estado = new int[maquina.Length];
+            for (int i = 0; i < maquina.Length; i++)
+                estado[i] = maquina[i].getEstado();
+
+            int temp = estado[m];//VERIFICAR O INDICE
+            estado[m] = estado[0];
+            estado[0] = temp;
+
+            String str = "";
+            //Array.Sort(estado);
+            Array.Sort(estado, 1, estado.Length - 1);
+            for (int i = 0; i < maquina.Length; i++)
+                str += estado[i] + " - ";
+
+            //MessageBox.Show("Maquina "+m+" : "+str);
+            return estado;
+        }
+
+        public void iniciarSimulacao(MainWindow main)
+        {
+            while (replicacoesTotais > replicacaoAtual)
+                iniciarReplicacao(main);
+            main.Dispatcher.Invoke(DispatcherPriority.Normal, new Action(() =>
+            {
+                main.baseGrid.Children.Remove(this.nroReplicacao);
+                main.toolbar.IsEnabled = false;
+            }));
+
+            MessageBox.Show("Todas as replicações foram concluídas.");
+        }
+
+        public void iniciarReplicacao(MainWindow main)
+        {
+            //var main = (MainWindow)param;
+            //var main = App.Current.MainWindow as MainWindow;
+
+            tarefasConcluidas = 0;
+
+            main.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
+            {
                 //Valor maximo da barra de progresso é o número de operações que terão de ser completadas
                 main.barraProgresso.Maximum = qtdTarefas * qtdMaquinas;
                 //Ativação dos botões da toolbar
@@ -105,7 +225,7 @@ namespace Simulador_Final
                 main.chaoDeFabrica.Children.Clear();
                 main.barraProgresso.Value = 0;
                 nroReplicacao.Content = "Replicação nº " + replicacaoAtual;
-            //}));
+            }));
 
             //Define se serão mostrados os dados da replicação
             mostrar = false;
@@ -116,81 +236,43 @@ namespace Simulador_Final
             }
             if (mostrar)
             {
-                //App.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
-               // {
+                main.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
+                {
                     main.chaoDeFabrica.Children.Add(labelTempo);
                     main.menuSaida.IsEnabled = true;
                     main.menuSaida.IsChecked = true;
                     main.baseGrid.RowDefinitions[3].Height = new System.Windows.GridLength(70);
-               // }));
+                }));
             }
+            else
+                tempoDeEspera = 0;
 
             //Reset dos dados de replicações anteriores
             tempo = 0;
 
             //Construtor das máquinas
-            this.maquina = new Maquina[qtdMaquinas];
-            for (int i = 0; i < qtdMaquinas; i++)
-            {
-                this.maquina[i] = new Maquina(i, aprendiz);
-                this.maquina[i].Focada += new Simulador_Final.Tarefa.PainelEventHandler(main.colocarDetalhe);
-            }
+            main.Dispatcher.Invoke(DispatcherPriority.Normal, new Action(instanciarMaquinas ));
 
             //Adiciona as máquinas ao chão de fábrica somente se replicação for mostrada
             if (mostrar)
             {
-                //App.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
-                //  {
-                main.renderizarMaquinas(qtdMaquinas);
-                // }));
+                App.Current.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
+                {
+                    main.renderizarMaquinas(qtdMaquinas);
+                }));
             }
 
-            //Construtor das tarefas: Aqui se calculam os instantes de chegada da tarefa
-            tarefa = new Tarefa[qtdTarefas];
-            Exponential expDist = new Exponential(0.090);
-            double ultimaChegada = 0;
+            /*Construtor das tarefas: Aqui se calculam os instantes de chegada da tarefa
+              A thread Main deverá criar os objetos tarefa, pois estes possuem elementos gráficos,
+              que devem estar obrigatoriamente em uma STA (ver Threading Model do WPF).
+            */
+            main.Dispatcher.Invoke(DispatcherPriority.Normal, new Action(instanciarTarefas));
 
-            for (int i = 0; i < qtdTarefas; i++)
+            while (tarefasConcluidas < qtdTarefas)
             {
-                ultimaChegada += expDist.Sample();
-                ultimaChegada = Math.Round(ultimaChegada, 2);
-                tarefa[i] = new Tarefa(i, qtdMaquinas, ultimaChegada, aprendiz);
-                tarefa[i].Focada += new Simulador_Final.Tarefa.PainelEventHandler(main.colocarDetalhe);
+                avancaTempo(main);
+                System.Threading.Thread.Sleep(tempoDeEspera);
             }
-
-            //Gerenciamento do tempo
-            timer = new DispatcherTimer();
-            switch ((int)main.sliderTempo.Value)
-            {
-                case 0:
-                    timer.Interval = TimeSpan.FromMilliseconds(0.1);
-                    break;
-                case 1:
-                    timer.Interval = TimeSpan.FromMilliseconds(1);
-                    break;
-                case 2:
-                    timer.Interval = TimeSpan.FromMilliseconds(50);
-                    break;
-                case 3:
-                    timer.Interval = TimeSpan.FromMilliseconds(100);
-                    break;
-                default:
-                    timer.Interval = TimeSpan.FromMilliseconds(0.1);
-                    break;
-            }
-
-            if (mostrar)/*só utiliza o timer se não for mostrar a replicação*/
-            {
-                timer.Tick += avancaTempo;
-                timer.Start();
-            }
-           
-            //Se a replicação não for mostrada, a UI trava mas processa mais rápido
-            if (!mostrar)
-            {
-                //Teste de verificação de conclusão da simulação
-                while (main.saida.Children.Count < qtdTarefas + 1)
-                    avancaTempo(this, this);
 
                 escreverRelatorios();
                 replicacaoAtual++;
@@ -208,7 +290,7 @@ namespace Simulador_Final
                     MessageBox.Show("Todas as replicações foram concluídas.");
                 }
                  * */
-            }
+            //}
         }
 
         public bool existemMaisReplicacoes() { return (replicacaoAtual < replicacoesTotais); }
@@ -223,11 +305,6 @@ namespace Simulador_Final
             return this.tempo;
         }
 
-        public DispatcherTimer getTimer()
-        {
-            return this.timer;
-        }
-
         private void chegadaTarefas()
         {
             for (int t = 0; t < qtdTarefas; t++)
@@ -239,23 +316,28 @@ namespace Simulador_Final
             }
         }
 
-        private void avancaTempo(object sender, object e)
+        private void avancaTempo(MainWindow main)
         {
-            lock (this)
-            {
-                timer.Stop();
+                while (pausado)
+                    Thread.Sleep(200);
+
                 tempo = Math.Round(tempo + dt, 2);
-                var main = App.Current.MainWindow as MainWindow;
 
                 if (!mostrar)
                 {
-                    main.menuSaida.IsChecked = false;
-                    main.menuSaida.IsEnabled = false;
-                    main.baseGrid.RowDefinitions[3].Height = new System.Windows.GridLength(0);
+                    main.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
+                    {
+                        main.menuSaida.IsChecked = false;
+                        main.menuSaida.IsEnabled = false;
+                        main.baseGrid.RowDefinitions[3].Height = new System.Windows.GridLength(0);
+                    }));
                 }
 
                 //Imprime um numero determinado de digitos da variavel tempo
-                labelTempo.Content = "TEMPO: " + tempo.ToString("00.00");
+                main.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
+                {
+                    labelTempo.Content = "TEMPO: " + tempo.ToString("00.00");
+                }));
 
                 for (int m = 0; m < qtdMaquinas; m++)
                 {
@@ -263,10 +345,8 @@ namespace Simulador_Final
                     //maquina[m].adicionarTrabFila();
 
                     if (!maquina[m].getEstaProcessando())
-                    {
                         if (maquina[m].getFila().Count > 0)
                             regraDespacho(m, this.acao, this.tempo);
-                    }
                 }
 
                 for (int m = 0; m < qtdMaquinas; m++)
@@ -279,7 +359,10 @@ namespace Simulador_Final
                         {
                             Tarefa temp = maquina[m].getProcessando();
                             maquina[m].operacaoFinalizada(tempo);
-                            main.barraProgresso.Value++;
+                            main.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
+                            {
+                                main.barraProgresso.Value++;
+                            }));
 
                             if (temp.getOperacoesCompletas() < qtdMaquinas)
                             {
@@ -287,73 +370,17 @@ namespace Simulador_Final
                             }
                             else
                             {
-                                temp.finalizada(tempo, temp);
-                                main.saida.Children.Add(temp.getBotaoTarefa());
+                                temp.finalizada(tempo);
+                                main.Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() => {
+                                    main.saida.Children.Add(temp.getBotaoTarefa());
+                                }));
+                                tarefasConcluidas++;
                             }
                         }
                     }
                 }
 
                 chegadaTarefas();
-
-
-                /*
-                 //Teste de verificação de conclusão da simulação
-                if (main.saida.Children.Count >= qtdTarefas + 1)
-                {
-                    escreverRelatorios();
-                    replicacaoAtual++;
-
-
-                    //Verifica se há mais replicações a serem feitas
-                    if (replicacaoAtual < replicacoesTotais)
-                    {
-                        iniciarReplicacao();
-                    }
-                    else
-                    {
-                        this.timer.IsEnabled = false;
-                        main.baseGrid.Children.Remove(this.nroReplicacao);
-                        main.toolbar.IsEnabled = false;
-
-                        MessageBox.Show("Todas as replicações foram concluídas.");
-                    }
-                }
-                else
-                { timer.Start(); }
-
-
-                */
-
-                if (mostrar)
-                {
-                    //Teste de verificação de conclusão da simulação
-                    if (main.saida.Children.Count >= qtdTarefas + 1)
-                    {
-                        escreverRelatorios();
-                        replicacaoAtual++;
-
-
-                        //Verifica se há mais replicações a serem feitas
-                        if (replicacaoAtual < replicacoesTotais)
-                        {
-                            iniciarReplicacao();
-                        }
-                        else
-                        {
-                            this.timer.IsEnabled = false;
-                            main.baseGrid.Children.Remove(this.nroReplicacao);
-                            main.toolbar.IsEnabled = false;
-
-                            MessageBox.Show("Todas as replicações foram concluídas.");
-                        }
-                    }
-                    else
-                    {
-                        timer.Start();
-                    }
-                }
-            }
         }
 
         private void regraDespacho(int m, int acao, double tempo)
@@ -781,6 +808,7 @@ namespace Simulador_Final
         public void avancarReplicacao()
         {
             this.mostrar = false;
+            tempoDeEspera = 0;
         }
     }
 }

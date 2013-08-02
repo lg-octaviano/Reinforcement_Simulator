@@ -14,7 +14,7 @@ using System.Windows.Shapes;
 using System.Windows.Threading;
 using System.Threading;
 
-namespace Simulador_Final
+namespace Reinforcement_Simulator
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
@@ -28,6 +28,7 @@ namespace Simulador_Final
         private int IndicePainel = -1;
 
         Simulador sim1;
+        Thread threadWorker;
 
         public MainWindow()
         {
@@ -64,18 +65,20 @@ namespace Simulador_Final
 
             //O correto seria fazer o processamento da simulação em uma thread distinta
             //e comunicar a main thread sobre atualizacao de UI
-            /*
-            Thread worker = new Thread( () => sim1.iniciarReplicacao(this));
-            worker.SetApartmentState(ApartmentState.STA);
-            worker.Start();
-             */
-
+            
+            threadWorker = new Thread( () => sim1.iniciarSimulacao(this));
+            //worker.SetApartmentState(ApartmentState.STA);
+            threadWorker.Start();
+             
+            
             /*TUDO ISSO SÓ SE APLICA PARA CASO DE NAO MOSTRAR SIMS*/
+            /*
             while(sim1.existemMaisReplicacoes())
                 sim1.iniciarReplicacao();
             baseGrid.Children.Remove(sim1.nroReplicacao);
             toolbar.IsEnabled = false;
             MessageBox.Show("Todas as replicações foram concluídas.");
+             * */
         }
 
         //Adiciona uma coluna à Grid, usada para inserir número indeterminado de máquinas no chão de fábrica
@@ -120,51 +123,13 @@ namespace Simulador_Final
              * */
         }
 
-        //Calcula o trabalho total em uma máquina (utilizado na Maquina.WINQ())
-        public double calcularTrabalhoMaquina(int m)
-        {
-            double trabalho = 0;
-            for (int i = 0; i < sim1.getMaquinas()[m].getFila().Count; i++)
-            {
-                Tarefa T = (Tarefa)sim1.getMaquinas()[m].getFila()[i];
-                trabalho += T.getTempoDeProcessamento(T.getOperacoesCompletas());
-            }
-            return trabalho;
-        }
-
-        //Retorna estado do sistema (vetor do estado das máquinas)
-        public int[] getEstadoSistema(int m)
-        {
-            int[] estado = new int[sim1.getMaquinas().Length];
-            for (int i = 0; i < sim1.getMaquinas().Length; i++)
-                estado[i] = sim1.getMaquinas()[i].getEstado();
-
-            int temp = estado[m];//VERIFICAR O INDICE
-            estado[m] = estado[0];
-            estado[0] = temp;
-
-            String str = "";
-            //Array.Sort(estado);
-            Array.Sort(estado, 1, estado.Length - 1);
-            for (int i = 0; i < sim1.getMaquinas().Length; i++)
-                str += estado[i] + " - ";
-
-            //MessageBox.Show("Maquina "+m+" : "+str);
-            return estado;
-        }
-
-        public double tempoDeVidaMedioNaMaquina(int m)
-        {
-            return sim1.getMaquinas()[m].getTempoMedioDeVida();
-        }
-
         /*----------------------EVENTHANDLERS---------------------*/
         private void sobre_Click(object sender, RoutedEventArgs e)
         {
             InformacoesProd a = new InformacoesProd();
             a.ShowDialog();
         }
-
+        
         private void botaoParar_Click(object sender, RoutedEventArgs e)
         {
             //aviso de cancelar simulacao
@@ -176,6 +141,7 @@ namespace Simulador_Final
                 chaoDeFabrica.Children.Clear();
                 scrollDetalhes.Content = null;
                 baseGrid.Children.Remove(sim1.nroReplicacao);
+                threadWorker.Abort();
             }
         }
 
@@ -186,12 +152,12 @@ namespace Simulador_Final
                 if (botaoPlay.Content == FindResource("Play"))
                 {
                     botaoPlay.Content = FindResource("Pause");
-                    sim1.getTimer().Start();
+                    sim1.pausado = false;
                 }
                 else
                 {
                     botaoPlay.Content = FindResource("Play");
-                    sim1.getTimer().Stop();
+                    sim1.pausado = true;
                 }
             }
         }
@@ -220,33 +186,21 @@ namespace Simulador_Final
         private void slider_ValueChanged(object sender, RoutedEventArgs e)
         {
             if (sim1 != null)
-            {
-                //Gerenciamento do tempo
-                switch ((int)sliderTempo.Value)
-                {
-                    case 0:
-                        sim1.getTimer().Interval = TimeSpan.FromMilliseconds(0.1);
-                        break;
-                    case 1:
-                        sim1.getTimer().Interval = TimeSpan.FromMilliseconds(1);
-                        break;
-                    case 2:
-                        sim1.getTimer().Interval = TimeSpan.FromMilliseconds(50);
-                        break;
-                    case 3:
-                        sim1.getTimer().Interval = TimeSpan.FromMilliseconds(100);
-                        break;
-                    default:
-                        sim1.getTimer().Interval = TimeSpan.FromMilliseconds(0.1);
-                        break;
-                }
-            }
+                if(sim1.mostrar)
+                    sim1.tempoDeEspera = (int)sliderTempo.Value;
         }
 
         private void novaSim_Click(object sender, RoutedEventArgs e)
         {
             novaSimulacao novaSim = new novaSimulacao();
             novaSim.ShowDialog();
+        }
+
+        private void closing_handler(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            if(threadWorker!=null)
+                if (threadWorker.ThreadState!=ThreadState.Unstarted)
+                    threadWorker.Abort();
         }
     }
 }

@@ -6,7 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Windows.Forms;
 
-namespace Simulador_Final
+namespace Reinforcement_Simulator
 {
     partial class InformacoesProd : Form
     {
@@ -14,11 +14,14 @@ namespace Simulador_Final
         {
             InitializeComponent();
             this.Text = String.Format("Sobre o Simulador");
-            this.labelProductName.Text = String.Format("Simulador");
-            this.labelVersion.Text = String.Format("Versão 1.0");
+            this.labelProductName.Text = String.Format("Reinforcement Simulator");
+            this.labelVersion.Text = String.Format("Versão 1.1");
             this.labelCopyright.Text = String.Format("Universidade Federal de São Carlos");
-            this.labelCompanyName.Text = String.Format("Agosto de 2012");
-            this.textBoxDescription.Text = String.Format("Simulador de Sistemas de Manufatura do tipo Job Shop, criado por Luis Gustavo Izzo Octaviano, sob supervisão de Maurício Figueiredo.");
+            this.labelCompanyName.Text = String.Format("Agosto de 2013");
+            this.textBoxDescription.Text = String.Format("Simulador de Sistemas de Manufatura do tipo "+
+                "Job Shop, com funcionalidades básicas para sequenciamento por Aprendizado por Reforço. "+ 
+                "Criado por Luis Gustavo Izzo Octaviano, sob supervisão de Maurício Figueiredo. "+
+                "Este projeto está disponível em github.com, com o nome Reinforcement_Simulator.");
         }
 
         #region Assembly Attribute Accessors
@@ -100,5 +103,10 @@ namespace Simulador_Final
             }
         }
         #endregion
+
+        private void tableLayoutPanel_Paint(object sender, PaintEventArgs e)
+        {
+
+        }
     }
 }
