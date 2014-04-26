@@ -1,11 +1,18 @@
-MUDANÇAS NECESSÁRIAS:
-
--Fazer o processamento em thread separada, comunicando as atualizacoes de interface para a main thread. Isso pode ser feito via dispatcher! :
+Referência do WPF Threading Model:
 http://msdn.microsoft.com/en-us/magazine/cc163328.aspx
 http://tech.pro/tutorial/800/working-with-the-wpf-dispatcher
+
+
+MUDANÇAS NECESSÁRIAS:
 
 -Classes tarefa e maquina precisam ter uma classe filha para ser usada com o aprendiz, com os métodos a mais e, na tarefa, carregando as infos de s, a, s', a'.
 
 -Arrumar a bagunça da arquitetura de ter que ficar chamando main.atributo... Provavelmente isso vai ser resolvido com a primeira mudança sugerida
 
 -Desenhar diagramas de classe.
+
+-Janela "Iniciar Nova Simulação" tem que ser resizable e começar com uma height compatível com a resolução atual.
+
+-Capacidade de rodar vários processos de aprendizagem paralelamente, para aproveitar multiprocessing.
+
+-Armazenar o estado do agente (salvando as tabelas Q após cada replicação) para que seja possível reiniciar, em caso de falha, a partir da última replicação completa.

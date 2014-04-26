@@ -44,14 +44,11 @@ namespace Reinforcement_Simulator
         private Label[] Detalhes;
         private Label TituloStackPanel;
 
-        //Estado do sistema (NroOperacoes x NroMaquinas)
-        private int[][] estado;     /*estado no momento da tomada de decisão*/
-        private int[][] proximoEstado;      /*estado após ação realizada*/
-
-        //Ação que selecionou a tarefa na i-ésima operação
-        private int[] acao;
-        //Ação a tomar no estado após a seleção da tarefa
-        private int[] proximaAcao;
+        // Informações para atualização da tabela Q na aprendizagem.
+        private int[] estado;     /*estado no momento da tomada de decisão*/
+        private int[] proximoEstado;      /*estado após ação realizada*/
+        private int[] acao;        // Ação que selecionou a tarefa na i-ésima operação
+        private int[] proximaAcao;        // Ação a tomar no estado após a seleção da tarefa
 
         public Tarefa(int id, int qtdMaquinas, double instanteChegada, Simulador sim)
         {
@@ -71,13 +68,10 @@ namespace Reinforcement_Simulator
 
             tempoChegadaNaMaquina[0] = instanteChegada;    /*o tempo de chegada na primeira máquina é o tempo de chegada no sistema*/
 
-            proximoEstado = new int[qtdMaquinas][];
-            estado = new int[qtdMaquinas][];
-            for (int i = 0; i < qtdMaquinas; i++)
-            {
-                proximoEstado[i] = new int[qtdMaquinas];
-                estado[i] = new int[qtdMaquinas];
-            }
+            // Informações Guardadas para Atualização da Tabela Valor-Ação
+            // (utilizados apenas na simulação com aprendizagem)
+            proximoEstado = new int[qtdMaquinas];
+            estado = new int[qtdMaquinas];
             acao = new int[qtdMaquinas];
             proximaAcao = new int[qtdMaquinas];
 
@@ -171,40 +165,22 @@ namespace Reinforcement_Simulator
         public void setProximoEstadoAcao()
         {
             //var main = App.Current.MainWindow as MainWindow;
-            int[] estadoSistema = simulador.getEstadoSistema(this.getMaquina(getOperacoesCompletas()));
+            int estadoSistema = simulador.getEstadoSistema(this.getMaquina(getOperacoesCompletas()));
 
-            for (int i = 0; i < qtdMaquinas; i++)
-            {
-                this.proximoEstado[operacoesCompletas][i] = estadoSistema[i];
-            }
-
-            /*
-            MessageBox.Show("Estado" + operacoesCompletas + " da tarefa " + this.id + 
-             * "= " + estado[operacoesCompletas][0] + estado[operacoesCompletas][1]);
-            MessageBox.Show("Acao ="+this.acao[operacoesCompletas]);
-            MessageBox.Show("ProxEstado "+operacoesCompletas+" da tarefa "+this.id+"= "
-             * +estadoSistema[0] +estadoSistema[1]);
-            */
+            this.proximoEstado[operacoesCompletas] = estadoSistema;
 
             if (simulador.isModoAprendizado() && qtdMaquinas == 5)
             {
-                int estado = proximoEstado[operacoesCompletas][0] + 3 * proximoEstado[operacoesCompletas][1] +
-                    9 * proximoEstado[operacoesCompletas][2] + 27 * proximoEstado[operacoesCompletas][3] +
-                    81 * proximoEstado[operacoesCompletas][4];
-
-                proximaAcao[operacoesCompletas] = simulador.selecionarAcao(estado);
+                proximaAcao[operacoesCompletas] = simulador.selecionarAcao(estadoSistema);
             }
         }
 
         public void setEstados(int acao)
         {
-            int[] estadoSistema = simulador.getEstadoSistema(getMaquina(getOperacoesCompletas()));
+            int estadoSistema = simulador.getEstadoSistema(getMaquina(getOperacoesCompletas()));
 
-            for (int i = 0; i < qtdMaquinas; i++)
-            {
-                this.estado[operacoesCompletas][i] = estadoSistema[i];
-                this.acao[operacoesCompletas] = acao;
-            }
+            this.estado[operacoesCompletas] = estadoSistema;
+            this.acao[operacoesCompletas] = acao;
         }
 
         public int getId()
@@ -288,22 +264,11 @@ namespace Reinforcement_Simulator
             /*Atualizações da tabela do aprendiz*/
             if (simulador.isModoAprendizado() && qtdMaquinas==5)
             {
-                int s, new_s;
                 for(int i=0; i<qtdMaquinas; i++)
-                {
-                    s = estado[i][0] + 3*estado[i][1] + 
-                        9*estado[i][2] + 27*estado[i][3] + 81*estado[i][4];
-
-                    new_s = proximoEstado[i][0] + 3*proximoEstado[i][1] + 
-                        9*proximoEstado[i][2] + 27*proximoEstado[i][3] + 
-                        81*proximoEstado[i][4];
-
-                    simulador.atualizarQ(s, acao[i], -this.atraso, new_s, proximaAcao[i]);
-                }
-                    
+                    simulador.atualizarQ(estado[i], acao[i], -this.atraso, proximoEstado[i], proximaAcao[i]);            
             }
-
         }
+
         public Button getBotaoTarefa()
         {
             return this.botaoTarefa;

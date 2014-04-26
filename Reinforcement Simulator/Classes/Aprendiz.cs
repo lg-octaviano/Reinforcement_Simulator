@@ -2,22 +2,23 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Windows;
 
 namespace Reinforcement_Simulator
 {
     class Aprendiz
     {
         private double[][] Q;
-        private int numeroReplicacao;
+        private int numeroDeReplicacoes;
         private double mi,      /*probabilidade de escolher acao aleatória*/
-            alfa,   /*fator de atualizacao em relacao ao proximo estado e reforco*/
+            alfa,   /*fator de atualizacao em relacao à próxima estimativa de Q*/
             gama;   /*fator de atualizacao em relacao ao prox estado*/
         private Random rand = new Random();
 
 
-        public Aprendiz()
+        public Aprendiz(int nroReps)
         {
-            numeroReplicacao = 0;
+            numeroDeReplicacoes = nroReps;
             mi = 1;
             alfa = 0.1;
             gama = 0.5;
@@ -28,6 +29,8 @@ namespace Reinforcement_Simulator
                 Q[i] = new double[4];
         }
 
+        public double[][] getQ() { return Q; }
+
         public void atualizarQ(int s, int a, double r, int new_s, int new_a)
         {
             Q[s][a] = Q[s][a] + alfa*(r + gama*Q[new_s][new_a] - Q[s][a]);
@@ -36,12 +39,12 @@ namespace Reinforcement_Simulator
 
         public int selecionarAcao(int s)
         {
-            int epsilon = Convert.ToInt32(1 / mi);
             double maior;
             int acao;
 
-            if (rand.Next(epsilon) == 0)    /*seleciona regra aleatoria*/
-                return rand.Next(4);
+            // Se número aleatório entre 0.0 e 1.0 for menor que mi
+            if (rand.NextDouble() < mi)
+                return rand.Next(4);    /*seleciona regra aleatoria*/
             else        /*seleciona regra baseado em Q[s][a]*/
             {
                 maior = Q[s][0];
@@ -67,13 +70,12 @@ namespace Reinforcement_Simulator
             }
         }
 
-        public void incrementarReplicacao()
+        public void atualizarTaxaExploracao(int replicacaoAtual)
         {
-            numeroReplicacao++;
-            if (numeroReplicacao < 300)
-                mi = 1 - (95 * numeroReplicacao) / 30000;
+            if (replicacaoAtual - 1 < numeroDeReplicacoes / 2)
+                mi = -((double)2*(replicacaoAtual-1)/numeroDeReplicacoes) + 1;
             else
-                mi = 0.05;
+                mi = 0.0;
         }
 
     }

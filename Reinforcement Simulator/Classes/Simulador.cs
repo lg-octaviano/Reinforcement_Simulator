@@ -19,12 +19,19 @@ namespace Reinforcement_Simulator
         private delegate void UpdateProgressBarDelegate(
         System.Windows.DependencyProperty dp, Object value);
 
+        //Define qual o espaço de estados.
+        //Deve ser modificado no construtor diretamente.
+        private int espacoDeEstados;
+
         //Objetos para controle do tempo
         public int tempoDeEspera;
         public bool pausado;
         private double tempo = 0;
         private double dt = 0.01;
         private Label labelTempo;
+
+        //PARA TESTE--------------
+        public int regraAleatoria, regraSelecionada;
 
         //Número de replicações totais e replicações já concluídas
         public int replicacoesTotais;
@@ -54,6 +61,10 @@ namespace Reinforcement_Simulator
         public Simulador(int qTarefas, int qMaquinas, int acao, int rep, int[] exibirRep)
         {
             var main = App.Current.MainWindow as MainWindow;
+
+            espacoDeEstados = 3;
+            regraAleatoria = 0;
+            regraSelecionada = 0;
 
             tempoDeEspera = (int)main.sliderTempo.Value;
             pausado = false;
@@ -90,7 +101,7 @@ namespace Reinforcement_Simulator
 
 
             if (acao == 13) /*se simulação está em modo aprendizagem*/
-                aprendiz = new Aprendiz();
+                aprendiz = new Aprendiz(replicacoesTotais);
             else
                 aprendiz = null;
         }
@@ -143,22 +154,6 @@ namespace Reinforcement_Simulator
             }
         }
 
-        private bool terminouReplicacao()
-        {
-            var main = App.Current.MainWindow as MainWindow;
-            int tarefasConcluidas = 0;
-
-
-            main.Dispatcher.Invoke(DispatcherPriority.Normal, new Action(() =>
-                {
-                    //Subtrai-se 1 porque existe um label em saida.Children
-                    tarefasConcluidas = main.saida.Children.Count - 1;
-                }));
-
-            MessageBox.Show("tarefas concluidas = "+tarefasConcluidas);
-            return tarefasConcluidas >= qtdTarefas;
-        }
-
         public double tempoDeVidaMedioNaMaquina(int m)
         {
             return maquina[m].getTempoMedioDeVida();
@@ -175,35 +170,110 @@ namespace Reinforcement_Simulator
             return trabalho;
         }
 
-        public int[] getEstadoSistema(int m)
+        public int getEstadoSistema(int m)
         {
-            int[] estado = new int[maquina.Length];
-            for (int i = 0; i < maquina.Length; i++)
-                estado[i] = maquina[i].getEstado();
+            int[] estado;   //Espaço de estados multidimensional 
+            int s;  //Adaptação de estado[] para uma dimensao
+            double trabalhoOutrasMaquinas;
 
-            int temp = estado[m];//VERIFICAR O INDICE
-            estado[m] = estado[0];
-            estado[0] = temp;
+            switch (espacoDeEstados)
+            {
+                case 1:            /* Espaco de estados 1*/
+                    estado = new int[maquina.Length];
+                    for (int i = 0; i < maquina.Length; i++)
+                        estado[i] = maquina[i].getEstado();
 
-            String str = "";
-            //Array.Sort(estado);
-            Array.Sort(estado, 1, estado.Length - 1);
-            for (int i = 0; i < maquina.Length; i++)
-                str += estado[i] + " - ";
+                    int temp = estado[m];
+                    estado[m] = estado[0];
+                    estado[0] = temp;
 
-            //MessageBox.Show("Maquina "+m+" : "+str);
-            return estado;
+                    String str = "";
+                    Array.Sort(estado, 1, estado.Length - 1);
+                    for (int i = 0; i < maquina.Length; i++)
+                        str += estado[i] + " - ";
+                    s = estado[0] + 3 * estado[1] +
+                            9 * estado[2] + 27 * estado[3] + 81 * estado[4];
+
+                    //MessageBox.Show("Maquina "+m+" : "+str);
+                    break;
+                case 2: 
+                    estado = new int[2];
+                    trabalhoOutrasMaquinas = 0;
+                    estado[0] = maquina[m].getEstado();
+
+                    for (int i = 0; i < maquina.Length; i++)
+                    {
+                        if (i != m)
+                            trabalhoOutrasMaquinas += maquina[i].getTrabalhoNaFila();
+                    }
+
+                    if (trabalhoOutrasMaquinas < 0.0000001)  //TrabalhoOutrasMaquinas == 0
+                        estado[1] = 0;
+                    else if (trabalhoOutrasMaquinas < 14)
+                        estado[1] = 1;
+                    else if (trabalhoOutrasMaquinas < 28)
+                        estado[1] = 2;
+                    else if (trabalhoOutrasMaquinas < 54)
+                        estado[1] = 3;
+                    else
+                        estado[1] = 4;
+
+                    s = estado[0] + 3 * estado[1];
+                    break;
+                case 3:
+                    estado = new int[2];
+                    trabalhoOutrasMaquinas = 0;
+                    estado[0] = maquina[m].getEstado();
+
+                    for (int i = 0; i < maquina.Length; i++)
+                    {
+                        if (i != m)
+                            trabalhoOutrasMaquinas += maquina[i].getTrabalhoNaFila();
+                    }
+
+                    if (trabalhoOutrasMaquinas < 0.0000001)  //TrabalhoOutrasMaquinas == 0
+                        estado[1] = 0;
+                    else if (trabalhoOutrasMaquinas < 56)
+                        estado[1] = 1;
+                    else if (trabalhoOutrasMaquinas < 112)
+                        estado[1] = 2;
+                    else if (trabalhoOutrasMaquinas < 216)
+                        estado[1] = 3;
+                    else
+                        estado[1] = 4;
+
+                    s = estado[0] + 3 * estado[1];
+                    break;
+                default:
+                    MessageBox.Show("Espaco de Estados Indefinido. Cancele a Simulação.");
+                    return 0;
+            }
+
+            return s;
         }
 
         public void iniciarSimulacao(MainWindow main)
         {
+            //Mudança na cultura desta thread Worker permite que a impressão
+            //nos arquivos se façam no padrão americano, utilizando "." como
+            //separador decimal.
+            var culture = new System.Globalization.CultureInfo("en-us");
+            System.Threading.Thread.CurrentThread.CurrentUICulture = culture;
+            System.Threading.Thread.CurrentThread.CurrentCulture = culture;
+
             while (replicacoesTotais > replicacaoAtual)
+            {
                 iniciarReplicacao(main);
+                GC.Collect();
+            }
             main.Dispatcher.Invoke(DispatcherPriority.Normal, new Action(() =>
             {
                 main.baseGrid.Children.Remove(this.nroReplicacao);
                 main.toolbar.IsEnabled = false;
             }));
+
+            if (isModoAprendizado())
+                escreverFuncaoQ(); 
 
             MessageBox.Show("Todas as replicações foram concluídas.");
         }
@@ -274,23 +344,12 @@ namespace Reinforcement_Simulator
                 System.Threading.Thread.Sleep(tempoDeEspera);
             }
 
-                escreverRelatorios();
-                replicacaoAtual++;
+            GC.Collect();
 
-                /*
-                //Verifica se há mais replicações a serem feitas
-                if (replicacaoAtual < replicacoesTotais)
-                {
-                    iniciarReplicacao();
-                }
-                else
-                {
-                    main.baseGrid.Children.Remove(this.nroReplicacao);
-                    main.toolbar.IsEnabled = false;
-                    MessageBox.Show("Todas as replicações foram concluídas.");
-                }
-                 * */
-            //}
+            escreverRelatorios();
+            replicacaoAtual++;
+            if (isModoAprendizado())
+                aprendiz.atualizarTaxaExploracao(replicacaoAtual);
         }
 
         public bool existemMaisReplicacoes() { return (replicacaoAtual < replicacoesTotais); }
@@ -397,7 +456,7 @@ namespace Reinforcement_Simulator
                     maquina[m].TFA();
                     break;
                 case 3:
-                    maquina[m].maiorFTM(tempo);
+                    maquina[m].menorFTM(tempo);
                     break;
                 case 4:
                     maquina[m].EDD_LWR();
@@ -418,7 +477,7 @@ namespace Reinforcement_Simulator
                     maquina[m].maiorFVT(tempo);
                     break;
                 case 10:
-                    maquina[m].menorFTM(tempo);
+                    maquina[m].maiorFTM(tempo);
                     break;
                 case 11:
                     maquina[m].EDD();
@@ -479,6 +538,21 @@ namespace Reinforcement_Simulator
             string caminhoRelatorio = System.IO.Path.Combine(diretorioRelatorio, nomeRelatorio);
 
             return caminhoRelatorio;
+        }
+
+        private void escreverFuncaoQ()
+        {
+             string relatorio = caminhoRelatorio("FuncaoQ.txt");
+             double[][] Q = aprendiz.getQ();
+             using (System.IO.StreamWriter file = new System.IO.StreamWriter(relatorio))
+             {
+                 for (int i = 0; i < 243; i++)
+                 {
+                     for (int j = 0; j < 4; j++)
+                         file.Write(Q[i][j] + ", ");
+                     file.WriteLine();
+                 }
+             }
         }
 
         private void relatorioMediaFila()

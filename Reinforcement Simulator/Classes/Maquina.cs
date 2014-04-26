@@ -176,7 +176,6 @@ namespace Reinforcement_Simulator
                 t.getBotaoTarefa().Margin = new Thickness(2, 12, 2, 0);
                 fluxoMaquina.Children.Add(t.getBotaoTarefa());
             }));
-
         }
 
         //------------------------------------------------------
@@ -402,11 +401,11 @@ namespace Reinforcement_Simulator
             return indice;
         }
 
-        private int menorFolgaBaseadoEmVelocidadeTarefa(double tempoatual, out double menor)
+        private int maiorFolgaBaseadoEmVelocidadeTarefa(double tempoatual, out double menor)
         {
             int indice = -1;
             Tarefa T;
-            double menorFolga = Double.MaxValue;
+            double menorAtrasoRel = Double.MaxValue;
             double trabalhoRealizado = 0;
             double trabalhoRestante = 0;
             double velocidade = 0, tempoParaPrazo = 0;
@@ -430,9 +429,9 @@ namespace Reinforcement_Simulator
                 velocidade = trabalhoRealizado / (tempoatual - T.getTempoChegada() + 0.0001) + 0.0001;    /*Adiciona 0.0001 para evitar divisão por zero*/
                 tempoParaPrazo = T.getDataEntrega() - tempoatual;
 
-                if (trabalhoRestante/velocidade - tempoParaPrazo < menorFolga)
+                if (trabalhoRestante/velocidade - tempoParaPrazo < menorAtrasoRel)
                 {
-                    menorFolga = trabalhoRestante / velocidade - tempoParaPrazo;
+                    menorAtrasoRel = trabalhoRestante / velocidade - tempoParaPrazo;
                     indice = i;
                 }
 
@@ -440,15 +439,15 @@ namespace Reinforcement_Simulator
                 trabalhoRestante = 0;
             }
 
-            menor = menorFolga;
+            menor = menorAtrasoRel;
             return indice;
         }
 
-        private int maiorFolgaBaseadoEmVelocidadeTarefa(double tempoatual, out double maior)
+        private int menorFolgaBaseadoEmVelocidadeTarefa(double tempoatual, out double maior)
         {
             int indice = -1;
             Tarefa T;
-            double maiorFolga = Double.MinValue;
+            double maiorAtrasoRelativo = Double.MinValue;
             double trabalhoRealizado = 0;
             double trabalhoRestante = 0;
             double velocidade = 0, tempoParaPrazo = 0;
@@ -471,9 +470,9 @@ namespace Reinforcement_Simulator
                 velocidade = trabalhoRealizado / (tempoatual - T.getTempoChegada() + 0.0001) + 0.0001;
                 tempoParaPrazo = T.getDataEntrega() - tempoatual;
 
-                if (trabalhoRestante/velocidade - tempoParaPrazo > maiorFolga)
+                if (trabalhoRestante/velocidade - tempoParaPrazo > maiorAtrasoRelativo)
                 {
-                    maiorFolga = trabalhoRestante / velocidade - tempoParaPrazo;
+                    maiorAtrasoRelativo = trabalhoRestante / velocidade - tempoParaPrazo;
                     indice = i;
                 }
 
@@ -481,11 +480,11 @@ namespace Reinforcement_Simulator
                 trabalhoRestante = 0;
             }
 
-            maior = maiorFolga;
+            maior = maiorAtrasoRelativo;
             return indice;
         }
 
-        private int menorFolgaBaseadaEmTempoDeMaquinas(double tempoatual, out double menor)
+        private int maiorFolgaBaseadaEmTempoDeMaquinas(double tempoatual, out double menor)
         {
             int indice = -1;
             Tarefa T;
@@ -516,7 +515,7 @@ namespace Reinforcement_Simulator
             return indice;
         }
 
-        private int maiorFolgaBaseadaEmTempoDeMaquinas(double tempoatual, out double maior)
+        private int menorFolgaBaseadaEmTempoDeMaquinas(double tempoatual, out double maior)
         {
             int indice = -1;
             Tarefa T;
@@ -623,7 +622,7 @@ namespace Reinforcement_Simulator
             double maior;
             int indice = maiorFolgaBaseadaEmTempoDeMaquinas(tempo, out maior);
 
-            pósRegraDespacho(indice, 3);
+            pósRegraDespacho(indice, 10);
         }
 
         public void EDD_LWR()
@@ -687,7 +686,7 @@ namespace Reinforcement_Simulator
             double menor;
             int indice = menorFolgaBaseadaEmTempoDeMaquinas(tempo, out menor);
 
-            pósRegraDespacho(indice, 10);
+            pósRegraDespacho(indice, 3);
         }
 
         //Earliest Due Date
@@ -710,18 +709,17 @@ namespace Reinforcement_Simulator
 
         public void aprendizadoReforco(double tempo)
         {
-            int[] estado = simulador.getEstadoSistema(this.id);
+            int estado = simulador.getEstadoSistema(this.id);
             int acao;
             Random rand = new Random();
+
             if (fila.Count == 1)
             {
                 acao = rand.Next(4);
             }
             else
             {//SOH FUNCIONA PRA 5 MAQUINAS
-                int s = estado[0] + 3 * estado[1] +
-                            9 * estado[2] + 27 * estado[3] + 81 * estado[4];
-                acao = simulador.selecionarAcao(s);
+                acao = simulador.selecionarAcao(estado);
             }
             switch(acao){
                 case 0:SPT();
@@ -733,7 +731,7 @@ namespace Reinforcement_Simulator
                     TFA();
                     break;
                 case 3:
-                    maiorFTM(tempo);
+                    menorFTM(tempo);
                     break;
             }
         }
@@ -743,6 +741,13 @@ namespace Reinforcement_Simulator
             Random rnd = new Random(DateTime.Now.Millisecond);
             int x = rnd.Next(0, 4);
 
+            /*  Conta quantas regras foram selecionadas aleatoreamente
+             * 
+            if (fila.Count == 1)
+                simulador.regraAleatoria++;
+            else
+                simulador.regraSelecionada++;
+            */
             switch (x)
             {
                 case 0:
@@ -755,7 +760,7 @@ namespace Reinforcement_Simulator
                     TFA();
                     break;
                 case 3:
-                    maiorFTM(tempo);
+                    menorFTM(tempo);
                     break;
             }
         }
@@ -829,6 +834,19 @@ namespace Reinforcement_Simulator
                 if ((i+1) % 10 == 0)
                     Detalhes[2].Content += System.Environment.NewLine;
             }
+        }
+
+        public double getTrabalhoNaFila()
+        {
+            double somaDoTrabalho = 0;
+            Tarefa T;
+
+            for (int i = 0; i < fila.Count; i++)
+            {
+                T = (Tarefa)fila[i];
+                somaDoTrabalho += T.getTempoDeProcessamentoMaq(this.id);
+            }
+            return somaDoTrabalho;
         }
 
         private void setEstado()
